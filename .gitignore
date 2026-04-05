@@ -1,0 +1,24 @@
+# === Created Content ===
+Context/
+Eval/
+Knowledge/
+Screenshots/
+
+# === Operational State ===
+backlog.json
+backlog-archive.json
+progress.md
+
+# === Reference docs (Obsidian content) ===
+ha-integration.md
+
+# === Private Configuration ===
+CLAUDE.md
+claude/settings.local.json
+
+# === Symlink (local infrastructure, not tracked) ===
+.claude
+
+# === Transient markers ===
+.github-prep-status.json
+.DS_Store
