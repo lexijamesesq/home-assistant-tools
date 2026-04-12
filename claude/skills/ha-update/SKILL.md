@@ -59,7 +59,7 @@ You are the update manager for a Home Assistant instance. You assess risk, deter
 
 | File | Purpose |
 |------|---------|
-| `Knowledge/ha-update-heuristics.md` | Distilled patterns — read on startup, refine at closeout |
+| `Knowledge/update-heuristics.md` | Distilled patterns — read on startup, refine at closeout |
 | `Context/ha-043-update-management.md` | Architecture and design rationale |
 | `progress.md` | Project progress log — append summary at closeout |
 | `backlog.json` | Project backlog — update status at closeout |
@@ -78,7 +78,7 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 ### Phase A: Setup
 
-1. **Load heuristics.** Read `Knowledge/ha-update-heuristics.md`. These patterns inform risk classification, ordering, validation, and checkpoint decisions throughout the run.
+1. **Load heuristics.** Read `Knowledge/update-heuristics.md`. These patterns inform risk classification, ordering, validation, and checkpoint decisions throughout the run.
 
 2. **Load system config.** Read CLAUDE.md Configuration section to resolve SSH connection details and add-on identifiers for use throughout the run.
 
@@ -150,7 +150,40 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 ### Phase C: Execute (loop)
 
-8. **Create backup.** Call `ha_backup_create(name="Pre_Update_Run_<date>")`. Do NOT use `update.install`'s `backup: true` flag (includes database, slow). If the backup call times out, check status or retry once — the backup may have completed despite the timeout. Log to run progress.
+8. **Create backup via SSH and wait for completion.** Do NOT use `ha_backup_create()` (MCP) — it includes all add-ons with no exclusion option and times out at 120s. Do NOT use `update.install`'s `backup: true` flag (includes database, slow).
+
+   Use SSH to create a selective partial backup that excludes slow or unnecessary add-ons.
+
+   **Step 8a: Build the add-on list dynamically.** Query installed add-ons via `ha_get_addon()` (or SSH `ha apps info --raw-json`). Collect all installed add-on slugs. Then remove any slugs listed in the exclusion set below. The remaining slugs form the `--app` arguments for the backup command.
+
+   **Backup exclusions** (configured in CLAUDE.md or heuristics — check both):
+   - `a0d7b954_influxdb` — historical time-series data only, 15-16 min backup time, no rollback value for updates. Daily automatic backups cover it.
+
+   If new add-ons have been installed since the last run, they will be automatically included. If add-ons have been removed, they won't appear in the query. Log the final add-on list in run progress so the record is clear.
+
+   **Step 8b: Create the backup.**
+   ```
+   ssh -i {ssh.key} {ssh.host} "ha backups new --name 'Pre_Update_Run_<date>' --homeassistant-exclude-database --app <slug1> --app <slug2> ..."
+   ```
+
+   The `--app` flag triggers a partial backup with only the specified add-ons. The `--homeassistant-exclude-database` flag excludes the recorder database for speed. HA config is included by default.
+
+   **The backup MUST complete before any updates begin.** The backup freezes the Supervisor while backing up add-ons. This freeze blocks OS updates, Supervisor restarts, and recovery commands. Proceeding with updates during an active backup risks I/O contention that can stall the backup indefinitely and leave the system frozen with no graceful recovery.
+
+   The SSH command should return when the backup completes (no 120s MCP timeout). If it times out or hangs, verify via:
+   ```
+   ssh -i {ssh.key} {ssh.host} "ha jobs info" | grep -A 8 "<backup_job_uuid>"
+   ```
+   Poll until the top-level backup job shows `done: true`.
+
+   **If backup gets stuck (>10 minutes without InfluxDB):** The system is frozen and recovery options are limited (`thaw` blocked by active job, `supervisor restart` blocked by freeze). Do NOT proceed with updates. Log the issue, note that daily automatic backups provide coverage, and defer the run.
+
+   After backup completes, verify the system state is `running` (not `freeze`):
+   ```
+   ssh -i {ssh.key} {ssh.host} "ha info | grep state"
+   ```
+
+   Log backup completion to run progress, then proceed.
 
 9. **Execute each item in order.** For each item:
 
@@ -186,7 +219,7 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 10. **Git commit.** SSH to the Pi (using connection details from CLAUDE.md Configuration) and commit config changes. Use targeted `git add` with specific paths — NOT `git add -A`. Check `git status --short` for modified files and stage only those relevant to the updates.
 
-11. **Refine heuristics.** Read the current heuristics file and the run progress. Update `Knowledge/ha-update-heuristics.md`:
+11. **Refine heuristics.** Read the current heuristics file and the run progress. Update `Knowledge/update-heuristics.md`:
     - Update observation counts on existing patterns
     - Add new patterns discovered during this run
     - Consolidate redundant entries
@@ -204,7 +237,8 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 ## Error Handling
 
 - **ha-mcp unreachable:** HA may be restarting. Poll every 30s up to 6 minutes. If still unreachable, stop and report.
-- **Backup timeout:** May time out at 120s but still complete. Check or retry once before treating as failure.
+- **Backup timeout:** The MCP call times out at 120s but the backup continues in the background. This is expected, not a failure. Verify completion via SSH `ha jobs info` as described in Step 8. Do NOT proceed with updates until the backup job shows `done: true` and the system state is `running`.
+- **Backup freeze blocks operations:** If the system is in `freeze` state, OS updates, Supervisor restarts, and `ha backups thaw` (while a job is active) all fail. Wait for backup completion or defer the run. Do NOT attempt `ha host reboot` without user confirmation.
 - **Config check fails:** STOP. Add to project backlog for human resolution.
 - **Update entity stuck in progress:** Wait up to 5 minutes. Check via SSH `ha apps info` for ground truth.
 - **Update entity shows old version after completion:** Known lag for add-ons. Verify via `ha_get_addon()` or SSH before concluding failure.

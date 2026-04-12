@@ -37,7 +37,7 @@ Run after HACS updates the Catppuccin distribution in `/config/themes/catppuccin
 
 - SSH access to HA Pi (connection details in CLAUDE.md Configuration > `ssh.*`)
 - Chrome MCP for visual validation
-- Read `Knowledge/ha-theme-architecture.md` before proceeding
+- Read `Knowledge/theme-architecture.md` before proceeding
 
 ## Instructions
 
@@ -156,7 +156,7 @@ Apply these mandatory fixes:
 
 If user approves:
 1. Commit on Pi using SSH connection details from CLAUDE.md Configuration
-2. Update the version reference in `Knowledge/ha-theme-architecture.md` if the architecture changed
+2. Update the version reference in `Knowledge/theme-architecture.md` if the architecture changed
 
 If user rejects:
 1. Revert: `git checkout -- themes/catppuccin_mush/` on Pi
