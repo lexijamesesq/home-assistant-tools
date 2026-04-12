@@ -51,8 +51,8 @@ cp CLAUDE.sample.md CLAUDE.md
 
 | File | What it does |
 |------|-------------|
-| `Knowledge/ha-update-heuristics.md` | Distilled patterns `/ha-update` learns from each run — risk overrides, dependency patterns, validation checks, known gotchas |
-| `Knowledge/ha-theme-architecture.md` | Reference doc for the Catppuccin Mush theme — ramp direction, modes injection, override markers |
+| `Knowledge/update-heuristics.md` | Distilled patterns `/ha-update` learns from each run — risk overrides, dependency patterns, validation checks, known gotchas |
+| `Knowledge/theme-architecture.md` | Reference doc for the Catppuccin Mush theme — ramp direction, modes injection, override markers |
 | `Eval/` | Test suites for validating HA subsystems after updates (brightness, Sonos, etc.) |
 | `Context/` | Design docs and implementation specs for backlog items |
 
@@ -62,7 +62,7 @@ The system separates what you configure from what skills handle.
 
 **You configure:**
 - `CLAUDE.md` — SSH connection details, HA URLs, add-on slugs, dashboard views
-- `Knowledge/ha-update-heuristics.md` — starts empty, grows as `/ha-update` learns your system
+- `Knowledge/update-heuristics.md` — starts empty, grows as `/ha-update` learns your system
 
 **Skills handle:**
 - Update inventory, risk assessment, and dependency ordering
