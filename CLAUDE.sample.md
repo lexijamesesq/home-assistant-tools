@@ -44,11 +44,20 @@ When I need information about the HA system, I consult these in order:
 
 2. **HA platform best practices** → `ha-mcp` MCP resource `skill://home-assistant-best-practices/SKILL.md`. Load on demand before creating or editing automations, scripts, helpers, or dashboards. Has a Reference Files table — load only the entries matching the current task, never the whole skill.
 
-3. **This instance's documented knowledge** → `Knowledge/` folder. Persistent docs on this specific HA system (system reference, lighting architecture, mode system, theme, Sonos, security posture, update heuristics, LIFX workflows, organizational reference).
+3. **This instance's documented knowledge** → `Knowledge/` folder. See `Knowledge/index.md` for the current inventory.
 
 4. **Active backlog-item context** → `Context/` folder. Per-item scratch docs for in-progress work only. Empty at steady state; created when a backlog item needs working context; deleted or decoupled when the item closes.
 
 **Not in this hierarchy:** CLAUDE.md itself does not duplicate Knowledge/ content. It holds project state, sensitive configuration, tool selection rules, and pointers into the hierarchy above.
+
+### Writing posture
+
+These docs exist for me to load context efficiently across sessions; the user is a secondary reader. I should update and prune them freely as the system evolves — terse and dense over polished prose, tables over paragraphs, file paths and commit hashes inline, no hesitation to delete what's no longer load-bearing.
+
+### Operations
+
+- **Query-and-file** — when a session produces durable synthesis (research spike, decision document, architectural explanation), file the result as a `Knowledge/` page with `type/knowledge` + `project/home-assistant` + `updated` frontmatter, and update `Knowledge/index.md`. Don't leave synthesis in chat history.
+- **Lint** — periodic health check on `Knowledge/` for stale pages (`updated` older than 90 days), orphans (not referenced from `index.md`, `CLAUDE.md`, or other Knowledge pages), malformed frontmatter, and frontmatter contradictions. Runs on demand; scheduling deferred.
 
 ---
 
@@ -141,3 +150,10 @@ For installed add-ons, integration catalog, protocol stack, physical layout, and
 **Location:** `backlog.json`
 **Schema:** Extended (id, title, description, status, phase, source, created, context_doc)
 **Context:** `Context/` — per-backlog-item scratch only; persistent knowledge goes to `Knowledge/`
+
+### Knowledge
+**Method:** markdown-file
+**Location:** `Knowledge/`
+**Schema:** `type/knowledge` + `project/home-assistant` + `updated` frontmatter (+ optional `backlog-item` when the page originates from a tracked item)
+**Index:** `Knowledge/index.md` updated on create/delete/rename
+**Writing posture:** Agent-first, user-secondary. See Knowledge Sources & Prioritization > Writing posture for the full rule.
