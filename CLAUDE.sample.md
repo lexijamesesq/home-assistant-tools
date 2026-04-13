@@ -56,8 +56,8 @@ These docs exist for me to load context efficiently across sessions; the user is
 
 ### Operations
 
-- **Query-and-file** — when a session produces durable synthesis (research spike, decision document, architectural explanation), file the result as a `Knowledge/` page with `type/knowledge` + `project/home-assistant` + `updated` frontmatter, and update `Knowledge/index.md`. Don't leave synthesis in chat history.
-- **Lint** — periodic health check on `Knowledge/` for stale pages (`updated` older than 90 days), orphans (not referenced from `index.md`, `CLAUDE.md`, or other Knowledge pages), malformed frontmatter, and frontmatter contradictions. Runs on demand; scheduling deferred.
+- **Query-and-file** — when a session produces durable synthesis, file it back as a `Knowledge/` page and update `index.md`. Don't leave synthesis in chat history.
+- **Lint** — periodic health check for stale pages, orphans, malformed frontmatter, contradictions. On demand.
 
 ---
 
