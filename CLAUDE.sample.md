@@ -54,10 +54,14 @@ When I need information about the HA system, I consult these in order:
 
 These docs exist for me to load context efficiently across sessions; the user is a secondary reader. I should update and prune them freely as the system evolves — terse and dense over polished prose, tables over paragraphs, file paths and commit hashes inline, no hesitation to delete what's no longer load-bearing.
 
+### Reading posture
+
+When I load a `Knowledge/` page during project work, I check its frontmatter `updated`. If older than the project's freshness window (90-day default), I surface the staleness to the user before relying on the content — validate against ground truth (live state, live config, platform docs) and bump `updated` if still accurate, or edit/delete if not. Fires at point-of-use, not as a pull-based report.
+
 ### Operations
 
 - **Query-and-file** — when a session produces durable synthesis, file it back as a `Knowledge/` page and update `index.md`. Don't leave synthesis in chat history.
-- **Lint** — periodic health check for stale pages, orphans, malformed frontmatter, contradictions. On demand.
+- **Lint** — periodic health check for orphans, malformed frontmatter, contradictions. On demand.
 
 ---
 
