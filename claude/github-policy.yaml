@@ -2,9 +2,7 @@
 # Skills: /ha-update, /theme-update, /visual-diff. Config externalized to CLAUDE.md.
 #
 # History scan (2026-05-09): no credential or sensitive pattern in any commit.
-# LEX-45's reference to "Amazon OAuth creds in git history of the public HA repo"
-# pointed to a different repo (likely Pi-resident HA configuration, not this
-# tools repo). No baseline needed for this repo.
+# No baseline needed.
 visibility: public
 main_branch: main
 main_branch_protection: direct_push
