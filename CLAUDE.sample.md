@@ -79,9 +79,7 @@ When I load a `Knowledge/` page during project work, I check its frontmatter `up
 
 | File | Purpose |
 |------|---------|
-| `backlog.json` | Task tracking (phased: audit, stabilize, update, modernize, expand) |
-| `backlog-archive.json` | Completed/cancelled items (moved during `/session-closeout`) |
-| `progress.md` | Append-only session log |
+| Linear project | Task tracking (phased: audit, stabilize, update, modernize, expand) |
 | `Knowledge/` | Persistent HA-system documentation — see Knowledge Sources section |
 | `Context/` | Per-backlog-item scratch docs only — not persistent knowledge |
 | `Eval/` | Repeatable test suites |
@@ -150,10 +148,13 @@ For installed add-ons, integration catalog, protocol stack, physical layout, and
 ## Intake
 
 ### Tasks
-**Method:** backlog-json
-**Location:** `backlog.json`
-**Schema:** Extended (id, title, description, status, phase, source, created, context_doc)
+**Method:** Linear
+**Project ID:** YOUR_PROJECT_UUID_HERE
+**Location:** [Linear project: YOUR_PROJECT_NAME](YOUR_LINEAR_PROJECT_URL) (YOUR_TEAM team)
 **Context:** `Context/` — per-backlog-item scratch only; persistent knowledge goes to `Knowledge/`
+
+### Narrative
+**Method:** Linear Project Updates
 
 ### Knowledge
 **Method:** markdown-file
