@@ -1,0 +1,18 @@
+# home-assistant-tools — public Claude Code tooling repo for HA work.
+# Skills: /ha-update, /theme-update, /visual-diff. Config externalized to CLAUDE.md.
+#
+# History scan (2026-05-09): no credential or sensitive pattern in any commit.
+# LEX-45's reference to "Amazon OAuth creds in git history of the public HA repo"
+# pointed to a different repo (likely Pi-resident HA configuration, not this
+# tools repo). No baseline needed for this repo.
+visibility: public
+main_branch: main
+main_branch_protection: direct_push
+prep:
+  required: true
+  strictness: strict
+  ttl_hours: 24
+allowed_force_push_targets: []
+protected_branches: [main]
+secret_scanning_baseline: null
+treat_as_public_for_secrets: false
