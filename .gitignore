@@ -19,6 +19,9 @@ claude/settings.local.json
 # === Symlink (local infrastructure, not tracked) ===
 .claude
 
+# === Operator PII rules (symlink -> ~/bin/dotty-private/gitleaks-operator-rules.toml) ===
+.gitleaks-operator-rules.toml
+
 # === Transient markers ===
 .github-prep-status.json
 .DS_Store

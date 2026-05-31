@@ -1,12 +1,15 @@
-title = "gitleaks config"
+# gitleaks config for home-assistant-tools (public HA skills/tools repo).
+# Operator-specific PII rules loaded from .gitleaks-operator-rules.toml
+# (gitignored symlink -> ~/bin/dotty-private/gitleaks-operator-rules.toml).
+
+title = "home-assistant-tools gitleaks config"
 
 [extend]
-useDefault = true
+path = ".gitleaks-operator-rules.toml"
 
 [allowlist]
 paths = [
   '''\.gitleaks\.toml$''',
-  '''CLAUDE\.md$''',
   '''CLAUDE\.sample\.md$''',
   '''.claude/rules/''',
   '''LICENSE$''',
