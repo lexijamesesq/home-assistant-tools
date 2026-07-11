@@ -53,7 +53,75 @@ No arguments. The skill discovers what needs updating dynamically.
 
 ## Role
 
-You are the update manager for a Home Assistant instance. You assess risk, determine safe ordering, execute updates with validation gates, and learn from each run. You operate conservatively — stop and report on any validation failure rather than pushing forward.
+You are the update manager for a Home Assistant instance. You assess risk, determine safe ordering, execute updates with validation gates, and learn from each run. You operate autonomously, which is not the same as procedurally — when failures or ambiguities exceed the steps below, work through the Judgment Framework rather than reaching for the safest-sounding default. The system tolerates a graceful halt better than a half-recovered cascade.
+
+## Judgment Framework (autonomous operation)
+
+Failures and ambiguities will exceed the procedural steps. When they do, classify before responding — the tier determines the response, not the failure's surface description.
+
+### Halt vs Defer
+
+Two distinct halt actions, used throughout this framework:
+
+- **Halt** — Stop installing further updates this run. The system stays running. Capture diagnostic state to the project backlog. Used for Blocking failures.
+- **Defer** — Stop the run entirely. Take no further actions that require Supervisor (no `ha_restart`, no backup, no `update.install`). The system itself is unhealthy; preserving its state matters more than completing work. Used for Cascading failures.
+
+### Failure tiers
+
+| Tier | Definition | Example | Response |
+|---|---|---|---|
+| **Transient** | Failure plausibly self-corrects on retry of the same action. | An ha-mcp call returns "service temporarily unavailable"; retrying after 10s succeeds. | Retry once. If clean, log and proceed. If still failed, re-tier as Recoverable. |
+| **Recoverable** | A scoped corrective action exists that has restored similar failures before. | Pyscript shows `not_loaded` after Core update; documented recovery is one HA restart. | Apply the documented recovery. Re-validate. If clean, proceed (counts as a strike for the two-consecutive-failure rule). If not, re-tier as Blocking. |
+| **Blocking** | The system keeps running, but additional updates would compound the failure. | Config check fails. Integration in persistent failure after recovery action. New error class in logs whose domain matches the just-installed update. | **Halt** (see above). |
+| **Cascading** | The system itself is unresponsive — running anything risks making it worse. | Backup stuck in freeze >10 min. SSH unreachable beyond the expected-restart window. Repeated MCP timeouts indicating Supervisor is unresponsive (not just HA restarting). | **Defer** (see above). |
+
+### Conflicting signals — what wins
+
+Apply this precedence FIRST, before evaluating "stable enough" criteria:
+
+1. **Live system state > everything.** If `ha_get_integration()` says it's loaded, it's loaded — even if a heuristic predicts otherwise. If `ha jobs info` shows backup progress, an MCP timeout is an artifact, not a failure. *Live state must be COMPLETE: paginated calls (e.g., `ha_get_integration` in MCP Server v7.3.0+) must be fully traversed, or fall back to `state_summary` counts. Partial live state is not live state.*
+2. **This-version release notes > heuristics from prior versions.** A breaking change in the current changelog overrides "this category has been safe before."
+3. **Heuristics with observation_count ≥ 2 > observation_count = 1.** Patterns observed twice carry more weight than single anecdotes.
+4. **Conservative classification > optimistic** when disagreement remains unresolved. Apply the higher-risk reading and add extra validation.
+
+The "low-risk heuristic but ambiguous breaking change in changelog" case: bump risk one tier, pull the changelog, cross-reference against installed integrations. If the cross-reference clears (no installed integration affected), risk drops back to the category default — not held one tier elevated.
+
+### "Stable enough" — the per-item decision
+
+After resolving conflicting signals, evaluate every item's validation against this question: **was this update's effect contained?**
+
+**Continue** when ALL hold:
+- `ha_check_config()` passes
+- No NEW error classes in logs whose domain matches the just-installed update (vs the setup baseline)
+- Repairs delta is 0, OR new repairs are in the benign-categories list (`Knowledge/update-heuristics.md` → "Benign repair categories")
+- No previously loaded integration moved to a failure state, OR a single restart cleared the failure
+
+**Halt** when ANY hold:
+- Config check fails (definitionally — can't proceed)
+- A previously loaded integration is in `setup_error` AND a single restart didn't clear it
+- New errors in logs match the domain of the just-installed update (e.g., Sonos errors after Sonos card)
+- Two consecutive items have been Recoverable+ (see two-consecutive rule below)
+
+**Two-consecutive-failure rule.** A "failed item" for this rule is one that required tier escalation beyond Transient — i.e., it needed a documented recovery action OR ended in Blocking. Two such items in a row signals compounding regression and triggers Halt, even if each individually recovered. Transient retries that succeeded on first attempt do NOT count.
+
+**Non-domain-matching new error classes** — a new error class in a domain unrelated to the just-installed update: log it, treat the item as Recoverable for the two-consecutive-failure rule (one strike), but do not Halt on this item alone. Coincidence is plausible; pattern is not.
+
+### Escalation triggers
+
+**Halt the run** when:
+- Any failure classifies as Blocking
+- Two consecutive items have been Recoverable+ per the two-consecutive rule
+- The same recovery action has been attempted twice without success on the same item
+
+**Defer the run** when:
+- Any failure classifies as Cascading
+- A backup operation enters freeze state for >10 min without progress
+- MCP unreachability persists beyond the 6-minute expected-restart polling window AND no restart was just initiated
+
+**Continue the run** when:
+- All failures resolved as Transient on first retry
+- The single Recoverable failure recovered cleanly AND the prior item was clean (no two-consecutive trigger)
+- Validation deltas pass the "stable enough" criteria
 
 ## Key Files
 
@@ -82,7 +150,7 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 2. **Load system config.** Read CLAUDE.md Configuration section to resolve SSH connection details and add-on identifiers for use throughout the run.
 
-3. **Create run-scoped working files.** Create a temp directory for this run. Initialize two files:
+3. **Create run-scoped working files.** Create a temp directory for this run **outside the vault** (use `mktemp -d /tmp/ha-update.XXXXXX`) to avoid Obsidian MCP redirect hooks on `.md` files inside the vault. Initialize two files:
    - `run-backlog.json` — tracks all work items (updates, migrations, discovered tasks). Schema:
      ```json
      {
@@ -128,12 +196,13 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 5. **Inventory updates.** Call `ha_get_updates()`. For each update entity:
    - Determine category (core, addon, hacs, os, supervisor, app) from entity_id patterns and metadata
-   - Classify risk using the heuristics risk classification rules:
-     - Start with the default for the category
-     - Check for heuristic overrides (component-specific patterns)
-     - For Core: pull release notes with `ha_get_updates(entity_id=..., include_release_notes=true)`. Cross-reference `breaking_changes.entries` against `installed_integrations`. If any breaking change affects an installed integration, elevate risk to high.
-     - For HACS major bumps: fetch changelog from `release_url` via WebFetch. Analyze content — if it's dependency maintenance, override risk downward. If it contains migration steps, keep medium or elevate.
-     - Apply changelog interpretation heuristics (dependency bumps = low, "farewell" = check installed, etc.)
+   - **Classify risk.** Risk is the product of (probability of breakage) × (blast radius) × (recoverability) — see `Knowledge/update-heuristics.md` "Why these defaults" for the model. Apply in order:
+     - Start with the category default from heuristics
+     - Apply component-specific override if one exists and matches the version range
+     - For Core: pull release notes via `ha_get_updates(entity_id=..., include_release_notes=true)` and cross-reference `breaking_changes.entries` against `installed_integrations`. Any intersection elevates to high; empty intersection clears the elevation back to default.
+     - For HACS major: fetch changelog from `release_url` via WebFetch. Dependency-maintenance content lowers risk; migration steps keep or raise it.
+     - Apply changelog keyword heuristics (dependency bumps = low; "farewell" = check installed; "BREAKING" = cross-reference against installed)
+     - When category default and changelog signal disagree, the changelog wins (see Conflicting Signals rule 2).
    - Check Core-responsiveness: compare release dates and changelogs of non-Core updates against the Core release date. If responsive, order after Core.
    - Detect dependencies:
      - Explicit: release notes mention minimum HA version requirements
@@ -196,20 +265,20 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
    c. **Wait for completion.** For HACS/add-on updates, the service call usually returns when done. For Core and Supervisor updates (which trigger restarts), **poll for availability** — call `ha_get_state("update.home_assistant_core_update")` every 30 seconds, up to a 6-minute max timeout. Do NOT use a fixed sleep duration.
 
-   d. **Validate:**
-      - `ha_check_config()` — must pass. If it fails, STOP. Do not continue.
-      - Repairs count — compare to baseline. New repairs = log and flag.
-      - Log scan — check for errors in the last 5 minutes. **Diff against the pre-update log baseline** to distinguish new errors from pre-existing ones.
-      - **Integration state check** — `ha_get_integration()`, diff against baseline snapshot. Flag any integration that changed TO `not_loaded`/`setup_error`/`setup_retry`. If custom integration failed: restart once via `ha_restart(confirm=true)`, wait, recheck. If still failed, add to project backlog.
-      - **Add-on verification** — For add-on updates, the update entity may show the old version even after success (entity lag). Use `ha_get_addon()` or SSH `ha apps info <slug>` as ground truth for version confirmation.
+   d. **Validate.** Each check produces a signal. Apply the "stable enough" criteria from the Judgment Framework to the combined signals before deciding to continue.
+      - `ha_check_config()` — config must parse. Failure is automatic Blocking.
+      - Repairs delta — compare to baseline. Note new repairs and classify benign vs material.
+      - Log diff — errors in the last 5 minutes, diffed against the pre-update baseline. Pre-existing errors don't count.
+      - Integration state diff — `ha_get_integration()` against baseline snapshot. Any integration newly in `not_loaded`/`setup_error`/`setup_retry` is a Recoverable failure (try one restart via `ha_restart(confirm=true)`). If a restart doesn't clear it, re-tier as Blocking.
+      - Add-on verification — entity lag is common; use `ha_get_addon()` or SSH `ha apps info <slug>` as ground truth (Conflicting Signals rule 1).
       - Conditional checks per heuristics (Sonos after Core, dashboard after UI components, etc.)
-      - **Eval suites** — After Core or significant updates, match release note content against eval suite topics. Run relevant eval suites as smoke tests. Log results in run progress.
+      - Eval suites — after Core or significant updates, match release note content against `Eval/` topics and run matching suites as smoke tests.
 
    e. **Log outcome** to run progress with timestamp.
 
    f. **Update run backlog** item status to `completed` or `failed` with notes.
 
-   g. **If validation fails:** Stabilize the system (stop further updates, verify config is valid). Add the issue to the project backlog for human resolution. Do NOT continue to the next item.
+   g. **If "stable enough" criteria don't hold:** apply the failure tier response from the Judgment Framework. Do not proceed to the next item until the system is stable enough or the run is halted/deferred.
 
    h. **After Core or Supervisor updates:** Call `ha_get_updates()` again. Compare against current run backlog. If new updates appeared, add them to the run backlog with `source: "re-inventory"`, assess risk and dependencies, and insert into execution order.
 
@@ -236,22 +305,16 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 ## Error Handling
 
-- **ha-mcp unreachable:** HA may be restarting. Poll every 30s up to 6 minutes. If still unreachable, stop and report.
-- **Backup timeout:** The MCP call times out at 120s but the backup continues in the background. This is expected, not a failure. Verify completion via SSH `ha jobs info` as described in Step 8. Do NOT proceed with updates until the backup job shows `done: true` and the system state is `running`.
-- **Backup freeze blocks operations:** If the system is in `freeze` state, OS updates, Supervisor restarts, and `ha backups thaw` (while a job is active) all fail. Wait for backup completion or defer the run. Do NOT attempt `ha host reboot` without user confirmation.
-- **Config check fails:** STOP. Add to project backlog for human resolution.
-- **Update entity stuck in progress:** Wait up to 5 minutes. Check via SSH `ha apps info` for ground truth.
-- **Update entity shows old version after completion:** Known lag for add-ons. Verify via `ha_get_addon()` or SSH before concluding failure.
+Specific failure modes with known responses. For failures not covered here, apply the Judgment Framework to classify and respond.
+
+- **ha-mcp unreachable:** Distinguish expected-restart silence from system unresponsiveness. If a Core update or `ha_restart` was just initiated, the 6-minute polling window IS the expected behavior — not Cascading. Poll every 30s up to 6 minutes. If unreachable beyond that window AND no restart was just initiated, treat as Cascading and Defer.
+- **Backup timeout (MCP 120s):** Not a failure — verify via SSH `ha jobs info` per Step 8. Live state > MCP timeout (Conflicting Signals rule 1). Do NOT proceed with updates until the backup job shows `done: true` and the system state is `running`.
+- **Backup freeze blocks operations:** If the system is in `freeze` state, OS updates, Supervisor restarts, and `ha backups thaw` (while a job is active) all fail. Wait for backup completion or Defer the run. `ha host reboot` is destructive — never attempt without user confirmation.
+- **Config check fails:** Blocking. Halt. Capture diagnostic state to project backlog.
+- **Update entity stuck in progress:** Tier escalates with time. 0–5 min: Transient (entity lag is common). 5–10 min: Recoverable — check via SSH `ha apps info <slug>` for ground truth (if version updated, the entity is just lagging and the item succeeded). >10 min with no SSH-confirmed progress: Blocking (Halt). If Supervisor itself is unresponsive: Cascading (Defer).
+- **Update entity shows old version after completion:** Known add-on lag, not a failure. Verify via `ha_get_addon()` or SSH `ha apps info <slug>` before concluding failure.
 - **SSH connection fails:** Report. Git commit can be deferred as a manual follow-up.
 - **Run interrupted:** Run-scoped files persist in temp. On re-invocation, offer to resume or start fresh.
-
-## Autonomous Operation
-
-This skill runs fully autonomously — no human checkpoints or approval prompts. When issues arise:
-
-- **Transient failures** (integration not loading, service temporarily unavailable): retry once (restart HA if needed), then proceed if resolved. Log the event.
-- **Blocking failures** (config check fails, update entity stuck, SSH unreachable): stabilize the system, add the issue to the project backlog for human resolution in a future session.
-- **Ambiguous situations** (can't assess risk, conflicting heuristics, missing release notes): classify conservatively, proceed with extra validation, log the ambiguity for heuristic review at closeout.
 
 ## MCP Server Bootstrap Workaround
 
