@@ -2,11 +2,7 @@ Claude Code skills for managing a Home Assistant instance. Handles system update
 
 ## Installation
 
-Clone the repo, then set up the Claude Code directory:
-
-```
-mv claude .claude
-```
+Clone the repo. `.claude/` ships tracked and committed — review its contents (see Security below) before opening the directory in Claude Code.
 
 Copy the sample config and fill in your values:
 
@@ -114,7 +110,7 @@ The MCP Server add-on cannot be updated via its own tools (bootstrap problem). T
 
 ## Security
 
-Review skills before installing. They load into Claude's context and execute with your permissions. The skills use SSH to access your HA instance and can install updates, restart services, and commit to git. Audit the contents of `claude/skills/` before use.
+Review skills before installing. They load into Claude's context and execute with your permissions. The skills use SSH to access your HA instance and can install updates, restart services, and commit to git. Audit the contents of `.claude/skills/` before use.
 
 ## License
 

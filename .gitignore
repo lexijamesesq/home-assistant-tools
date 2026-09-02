@@ -1,8 +1,5 @@
 # === Private local config ===
-claude/settings.local.json
-
-# === Symlink (local infrastructure, not tracked) ===
-.claude
+.claude/settings.local.json
 
 # === Operator PII rules (symlink -> ~/bin/dotty-private/gitleaks-operator-rules.toml) ===
 .gitleaks-operator-rules.toml
