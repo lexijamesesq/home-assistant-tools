@@ -83,7 +83,7 @@ When I load a `Knowledge/` page during project work, I check its frontmatter `up
 | `Knowledge/` | Persistent HA-system documentation — see Knowledge Sources section |
 | `Context/` | Per-backlog-item scratch docs only — not persistent knowledge |
 | `Eval/` | Repeatable test suites |
-| `.claude/skills/` | Project-level skills: `ha-update`, `theme-update`, `visual-diff` |
+| `claude/skills/` | Project-level skills: `ha-update`, `theme-update`, `visual-diff` |
 
 ---
 
