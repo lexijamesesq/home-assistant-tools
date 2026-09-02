@@ -11,6 +11,5 @@ path = ".gitleaks-operator-rules.toml"
 paths = [
   '''\.gitleaks\.toml$''',
   '''CLAUDE\.sample\.md$''',
-  '''.claude/rules/''',
   '''LICENSE$''',
 ]
