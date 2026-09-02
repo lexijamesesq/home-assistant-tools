@@ -1,24 +1,5 @@
-# === Created Content ===
-Context/
-Eval/
-Knowledge/
-Screenshots/
-
-# === Operational State ===
-backlog.json
-backlog-archive.json
-progress.md
-progress-archive.md
-
-# === Reference docs (Obsidian content) ===
-ha-integration.md
-
-# === Private Configuration ===
-CLAUDE.md
-claude/settings.local.json
-
-# === Symlink (local infrastructure, not tracked) ===
-.claude
+# === Private local config ===
+.claude/settings.local.json
 
 # === Operator PII rules (symlink -> ~/bin/dotty-private/gitleaks-operator-rules.toml) ===
 .gitleaks-operator-rules.toml
