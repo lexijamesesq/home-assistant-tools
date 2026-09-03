@@ -35,7 +35,7 @@ Run after HACS updates the Catppuccin distribution in `/config/themes/catppuccin
 
 ## Prerequisites
 
-- SSH access to HA Pi (connection details in CLAUDE.md Configuration > `ssh.*`)
+- SSH access to HA Pi (connection details in .claude/instance.md Configuration > `ssh.*`)
 - Chrome MCP for visual validation
 - Read `Knowledge/theme-architecture.md` before proceeding
 
@@ -47,7 +47,7 @@ Invoke `/visual-diff before theme-update-{version}` where `{version}` is the new
 
 ### Step 2: Extract New Distribution Frappe Section
 
-SSH to the Pi (using connection details from CLAUDE.md Configuration) and extract the `Catppuccin Frappe:` section from `/config/themes/catppuccin/catppuccin.yaml`. The Frappe section starts with `Catppuccin Frappe:` and ends before the next flavor (`Catppuccin Latte:`, `Catppuccin Macchiato:`, or `Catppuccin Mocha:`).
+SSH to the Pi (using connection details from .claude/instance.md Configuration) and extract the `Catppuccin Frappe:` section from `/config/themes/catppuccin/catppuccin.yaml`. The Frappe section starts with `Catppuccin Frappe:` and ends before the next flavor (`Catppuccin Latte:`, `Catppuccin Macchiato:`, or `Catppuccin Mocha:`).
 
 Save locally to `/tmp/catppuccin_frappe_new.yaml`.
 
@@ -146,7 +146,7 @@ Apply these mandatory fixes:
 
 ### Step 10: Deploy and Visual Diff
 
-1. SCP the new theme to Pi using SSH connection details from CLAUDE.md Configuration (`ssh.key`, `ssh.host`, `ssh.config_path`)
+1. SCP the new theme to Pi using SSH connection details from .claude/instance.md Configuration (`ssh.key`, `ssh.host`, `ssh.config_path`)
 2. Reload themes: `frontend.reload_themes`
 3. Set theme: `frontend.set_theme` with name `Catppuccin Mush` (no mode parameter)
 4. Invoke `/visual-diff after theme-update-{version}`
@@ -155,7 +155,7 @@ Apply these mandatory fixes:
 ### Step 11: Finalize
 
 If user approves:
-1. Commit on Pi using SSH connection details from CLAUDE.md Configuration
+1. Commit on Pi using SSH connection details from .claude/instance.md Configuration
 2. Update the version reference in `Knowledge/theme-architecture.md` if the architecture changed
 
 If user rejects:

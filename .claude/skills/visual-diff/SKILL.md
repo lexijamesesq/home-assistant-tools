@@ -37,7 +37,7 @@ Format: `<phase> <label> [paths...]`
 
 ## Default Dashboard Views
 
-If no paths specified, use the dashboard name and views list from CLAUDE.md Configuration > `dashboard.name` and `dashboard.views`. Construct paths as `/{dashboard.name}/{view}` for each view in the list.
+If no paths specified, use the dashboard name and views list from .claude/instance.md Configuration > `dashboard.name` and `dashboard.views`. Construct paths as `/{dashboard.name}/{view}` for each view in the list.
 
 ## Instructions
 
@@ -46,7 +46,7 @@ If no paths specified, use the dashboard name and views list from CLAUDE.md Conf
 1. Parse the label and optional paths from arguments
 2. Create the output directory: `Screenshots/{label}/before/`
 3. For each dashboard path:
-   a. Navigate to the URL using Chrome MCP (construct from CLAUDE.md Configuration > `ha.local_url` + path)
+   a. Navigate to the URL using Chrome MCP (construct from .claude/instance.md Configuration > `ha.local_url` + path)
    b. Wait for the view to fully render (check for card content in DOM)
    c. Take a screenshot using Chrome MCP gif_creator (single frame) or computer tool
    d. Save as `Screenshots/{label}/before/{view-name}.png` where view-name is the last path segment

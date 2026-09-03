@@ -1,12 +1,6 @@
----
-tags:
-  - type/claude-project
-  - project/home-assistant
-status: active
-description: "Home Assistant instance maintenance, automation, integration, and long-term system health."
----
+# Home Assistant Instance Config
 
-# Home Assistant
+Copy to `.claude/instance.md` and fill in your values — gitignored, one per fork. This is instance/state scaffolding for your own HA setup, separate from the repo's own `CLAUDE.md` (which orients a session working on the tools themselves).
 
 ---
 

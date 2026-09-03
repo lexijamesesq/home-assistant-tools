@@ -4,28 +4,28 @@ Claude Code skills for managing a Home Assistant instance. Handles system update
 
 Clone the repo. `.claude/` ships tracked and committed — review its contents (see Security below) before opening the directory in Claude Code.
 
-Copy the sample config and fill in your values:
+Copy the instance config sample and fill in your values:
 
 ```
-cp CLAUDE.sample.md CLAUDE.md
+cp .claude/instance.sample.md .claude/instance.md
 ```
 
 ### Required configuration
 
 | Field | Location | What to set |
 |-------|----------|-------------|
-| `ssh.host` | CLAUDE.md > Configuration | SSH user@host for your HA instance (e.g., `root@10.0.40.20`) |
-| `ssh.key` | CLAUDE.md > Configuration | Path to your SSH private key |
-| `ssh.config_path` | CLAUDE.md > Configuration | HA config directory on the remote host (usually `/config`) |
-| `ha.local_url` | CLAUDE.md > Configuration | Local URL for your HA instance (e.g., `http://homeassistant.local:8123`) |
+| `ssh.host` | `.claude/instance.md` > Configuration | SSH user@host for your HA instance (e.g., `root@10.0.40.20`) |
+| `ssh.key` | `.claude/instance.md` > Configuration | Path to your SSH private key |
+| `ssh.config_path` | `.claude/instance.md` > Configuration | HA config directory on the remote host (usually `/config`) |
+| `ha.local_url` | `.claude/instance.md` > Configuration | Local URL for your HA instance (e.g., `http://homeassistant.local:8123`) |
 
 ### Optional configuration
 
 | Field | Location | What to set |
 |-------|----------|-------------|
-| `addons.mcp_server_slug` | CLAUDE.md > Configuration | Supervisor slug for the MCP Server add-on (needed for the bootstrap workaround in `/ha-update`) |
-| `dashboard.name` | CLAUDE.md > Configuration | Your primary dashboard URL path (e.g., `dashboard-home`) |
-| `dashboard.views` | CLAUDE.md > Configuration | List of view names for `/visual-diff` screenshot captures |
+| `addons.mcp_server_slug` | `.claude/instance.md` > Configuration | Supervisor slug for the MCP Server add-on (needed for the bootstrap workaround in `/ha-update`) |
+| `dashboard.name` | `.claude/instance.md` > Configuration | Your primary dashboard URL path (e.g., `dashboard-home`) |
+| `dashboard.views` | `.claude/instance.md` > Configuration | List of view names for `/visual-diff` screenshot captures |
 
 ### Dependencies
 
@@ -57,7 +57,7 @@ cp CLAUDE.sample.md CLAUDE.md
 The system separates what you configure from what skills handle.
 
 **You configure:**
-- `CLAUDE.md` — SSH connection details, HA URLs, add-on slugs, dashboard views
+- `.claude/instance.md` — SSH connection details, HA URLs, add-on slugs, dashboard views
 - `Knowledge/update-heuristics.md` — starts empty, grows as `/ha-update` learns your system
 
 **Skills handle:**
@@ -67,7 +67,7 @@ The system separates what you configure from what skills handle.
 - Theme merge with ramp correction and override preservation
 - Dashboard screenshot capture and comparison
 
-See `CLAUDE.sample.md` for the full configuration contract with placeholder values.
+See `.claude/instance.sample.md` for the full configuration contract with placeholder values.
 
 ## Usage
 
@@ -103,8 +103,8 @@ The MCP Server add-on cannot be updated via its own tools (bootstrap problem). T
 
 ## Customization
 
-- **Different HA instance:** Update `CLAUDE.md` Configuration with your SSH details and URLs. The skills resolve everything at runtime.
-- **Different dashboard:** Update `dashboard.name` and `dashboard.views` in CLAUDE.md Configuration.
+- **Different HA instance:** Update `.claude/instance.md` Configuration with your SSH details and URLs. The skills resolve everything at runtime.
+- **Different dashboard:** Update `dashboard.name` and `dashboard.views` in `.claude/instance.md` Configuration.
 - **Different theme:** The `/theme-update` skill is specific to the Catppuccin Mush fork and its ramp-flip workaround. If you use a different theme, this skill won't apply — but it demonstrates a pattern for managing customized theme forks.
 - **Without Chrome MCP:** `/visual-diff` and the visual validation step in `/theme-update` won't work. The other skills and all update functionality operate via ha-mcp and SSH only.
 
