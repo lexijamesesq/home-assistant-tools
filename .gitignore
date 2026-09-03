@@ -2,8 +2,6 @@
 .claude/settings.local.json
 .claude/instance.md
 
-# === Operator PII rules (symlink -> ~/bin/dotty-private/gitleaks-operator-rules.toml) ===
-.gitleaks-operator-rules.toml
 
 # === Transient markers ===
 .github-prep-status.json
