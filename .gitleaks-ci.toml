@@ -6,15 +6,13 @@
 # every PR. This file runs gitleaks' base ruleset only; the operator's PII
 # rules keep gating every local commit/push through the unchanged
 # .gitleaks.toml the pre-commit hooks (gitleaks-staged/-pre-push/-commit-msg)
-# still use. Same shape as hazel's and dotty-private's .gitleaks-ci.toml
-# (LEX-675, LEX-679); LEX-703 is the tracked design for materializing the
-# operator rules from a secret so CI could carry them too.
+# still use. Same shape as hazel's and dotty-private's .gitleaks-ci.toml.
 
 title = "home-assistant-tools gitleaks config (CI — base rules only)"
 
 # A config file with no [[rules]] and no [extend] loads ZERO rules — it does
 # NOT fall back to gitleaks' embedded defaults on its own (verified in hazel's
-# CI, LEX-675, against a real deliberately-secret-bearing PR). useDefault =
+# CI against a real deliberately-secret-bearing PR). useDefault =
 # true is the documented way to inherit gitleaks' built-in ruleset while
 # still layering this file's own [allowlist] on top of it.
 [extend]
