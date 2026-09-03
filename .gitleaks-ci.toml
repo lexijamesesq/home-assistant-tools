@@ -23,6 +23,6 @@ useDefault = true
 [allowlist]
 paths = [
   '''\.gitleaks(-ci)?\.toml$''',
-  '''CLAUDE\.sample\.md$''',
+  '''instance\.sample\.md$''',
   '''LICENSE$''',
 ]

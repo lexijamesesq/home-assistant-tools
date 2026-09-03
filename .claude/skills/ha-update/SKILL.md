@@ -134,7 +134,7 @@ After resolving conflicting signals, evaluate every item's validation against th
 
 ## System Access
 
-SSH connection details and add-on identifiers are configured in the project CLAUDE.md under Configuration. Resolve these values at runtime by reading CLAUDE.md:
+SSH connection details and add-on identifiers are configured in the project .claude/instance.md under Configuration. Resolve these values at runtime by reading .claude/instance.md:
 - SSH host: `Configuration > ssh.host`
 - SSH key: `Configuration > ssh.key`
 - HA config path on remote: `Configuration > ssh.config_path`
@@ -148,7 +148,7 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 1. **Load heuristics.** Read `Knowledge/update-heuristics.md`. These patterns inform risk classification, ordering, validation, and checkpoint decisions throughout the run.
 
-2. **Load system config.** Read CLAUDE.md Configuration section to resolve SSH connection details and add-on identifiers for use throughout the run.
+2. **Load system config.** Read .claude/instance.md Configuration section to resolve SSH connection details and add-on identifiers for use throughout the run.
 
 3. **Create run-scoped working files.** Create a temp directory for this run **outside the vault** (use `mktemp -d /tmp/ha-update.XXXXXX`) to avoid Obsidian MCP redirect hooks on `.md` files inside the vault. Initialize two files:
    - `run-backlog.json` — tracks all work items (updates, migrations, discovered tasks). Schema:
@@ -225,7 +225,7 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
    **Step 8a: Build the add-on list dynamically.** Query installed add-ons via `ha_get_addon()` (or SSH `ha apps info --raw-json`). Collect all installed add-on slugs. Then remove any slugs listed in the exclusion set below. The remaining slugs form the `--app` arguments for the backup command.
 
-   **Backup exclusions** (configured in CLAUDE.md or heuristics — check both):
+   **Backup exclusions** (configured in .claude/instance.md or heuristics — check both):
    - `a0d7b954_influxdb` — historical time-series data only, 15-16 min backup time, no rollback value for updates. Daily automatic backups cover it.
 
    If new add-ons have been installed since the last run, they will be automatically included. If add-ons have been removed, they won't appear in the query. Log the final add-on list in run progress so the record is clear.
@@ -286,7 +286,7 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 ### Phase D: Closeout
 
-10. **Git commit.** SSH to the Pi (using connection details from CLAUDE.md Configuration) and commit config changes. Use targeted `git add` with specific paths — NOT `git add -A`. Check `git status --short` for modified files and stage only those relevant to the updates.
+10. **Git commit.** SSH to the Pi (using connection details from .claude/instance.md Configuration) and commit config changes. Use targeted `git add` with specific paths — NOT `git add -A`. Check `git status --short` for modified files and stage only those relevant to the updates.
 
 11. **Refine heuristics.** Read the current heuristics file and the run progress. Update `Knowledge/update-heuristics.md`:
     - Update observation counts on existing patterns
@@ -318,9 +318,9 @@ Specific failure modes with known responses. For failures not covered here, appl
 
 ## MCP Server Bootstrap Workaround
 
-The MCP Server add-on cannot be updated via ha-mcp tools — updating it restarts the service that provides the tools. Detect this case (match the entity_id or add-on slug from CLAUDE.md Configuration > `addons.mcp_server_slug`) and route around it via SSH:
+The MCP Server add-on cannot be updated via ha-mcp tools — updating it restarts the service that provides the tools. Detect this case (match the entity_id or add-on slug from .claude/instance.md Configuration > `addons.mcp_server_slug`) and route around it via SSH:
 
-Resolve connection details and slug from CLAUDE.md Configuration, then:
+Resolve connection details and slug from .claude/instance.md Configuration, then:
 ```
 ssh -i {ssh.key} {ssh.host} "ha apps update {addons.mcp_server_slug}"
 ```
