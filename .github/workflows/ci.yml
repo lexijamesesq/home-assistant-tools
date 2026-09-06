@@ -34,8 +34,8 @@ jobs:
       # dotty's .github/README.md: explicit control over scan range and
       # gitleaks:allow handling, not the vendor action's undocumented
       # defaults. Pinned to dotty's merge SHA, only reachable once it's on
-      # dotty main (LEX-709 is bringing this repo's siblings onto the same
-      # shape).
+      # dotty main (a separate effort is bringing this repo's siblings onto
+      # the same shape).
       - name: Setup gitleaks
         uses: lexijamesesq/dotty/.github/actions/setup-gitleaks@1fe38aab22976e13e3361ac363fd7dd23e68eea2
         with:
