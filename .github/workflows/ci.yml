@@ -57,7 +57,7 @@ jobs:
       # dotty main (a separate effort is bringing this repo's siblings onto
       # the same shape).
       - name: Setup gitleaks
-        uses: lexijamesesq/dotty/.github/actions/setup-gitleaks@1fe38aab22976e13e3361ac363fd7dd23e68eea2
+        uses: lexijamesesq/dotty/.github/actions/setup-gitleaks@c93878e66579ace2b49d99e4cb86234b4f1fd5d8
         with:
           version: '8.30.1'
       - name: gitleaks scan (base rules only, PR range, redacted)
