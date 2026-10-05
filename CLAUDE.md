@@ -35,7 +35,7 @@ pre-commit run --all-files  # gitleaks-staged + the standard hook set
 
 ## CI
 
-`.github/workflows/ci.yml`, required via the "Protect main" ruleset: the estate's shared `floor` job (`ci / checks`) — its pre-commit suite runs shellcheck on every PR's changed files, so this repo carries no separate `shellcheck` job. PR-time secret scanning is the trusted lane's `trusted-scan` (`gate.yml`, dotty's shared `setup-gitleaks` composite action, base rules only + `--redact` — public repo, the operator's PII ruleset never reaches CI), a separate required check from a separate workflow (`pull_request_target`, not `ci.yml`).
+`.github/workflows/ci.yml`, required via the "Protect main" ruleset: the estate's shared `floor` job (`ci / checks`) — its pre-commit suite runs shellcheck on the files a PR changes, except on a PR the triage step classifies as `mechanical` (`estate-ci.yml`'s own gate: `steps.triage.outputs.classification != 'mechanical'`, which the pre-commit step inherits via the `precommit_cfg` step it depends on) — so this repo carries no separate `shellcheck` job. PR-time secret scanning is the trusted lane's `trusted-scan` (`gate.yml`, dotty's shared `setup-gitleaks` composite action, base rules only + `--redact` — public repo, the operator's PII ruleset never reaches CI), a separate required check from a separate workflow (`pull_request_target`, not `ci.yml`).
 
 ## Conventions
 
