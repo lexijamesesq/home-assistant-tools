@@ -13,7 +13,7 @@ Three Claude Code skills (`/ha-update`, `/theme-update`, `/visual-diff`) for mai
 
 Clone the repo. `.claude/` ships tracked and committed — review its contents (see Security below) before opening the directory in Claude Code. Copy the instance config sample and fill in your own values:
 
-```
+```bash
 cp .claude/instance.sample.md .claude/instance.md
 ```
 
@@ -35,7 +35,7 @@ pre-commit run --all-files  # gitleaks-staged + the standard hook set
 
 ## CI
 
-`.github/workflows/ci.yml`, required via the "Protect main" ruleset: `shellcheck` (`ludeeus/action-shellcheck`) and `gitleaks` (full outgoing PR-range scan via dotty's shared `setup-gitleaks` composite action, base rules only + `--redact` — public repo, the operator's PII ruleset never reaches CI). Both required to merge.
+`.github/workflows/ci.yml`, required via the "Protect main" ruleset: the estate's shared `floor` job (`ci / checks`) — its pre-commit suite runs shellcheck on the files a PR changes, except on a PR the triage step classifies as `mechanical` (`estate-ci.yml`'s own gate: `steps.triage.outputs.classification != 'mechanical'`, which the pre-commit step inherits via the `precommit_cfg` step it depends on) — so this repo carries no separate `shellcheck` job. PR-time secret scanning is the trusted lane's `trusted-scan` (`gate.yml`, dotty's shared `setup-gitleaks` composite action, base rules only + `--redact` — public repo, the operator's PII ruleset never reaches CI), a separate required check from a separate workflow (`pull_request_target`, not `ci.yml`).
 
 ## Conventions
 
@@ -46,7 +46,7 @@ pre-commit run --all-files  # gitleaks-staged + the standard hook set
 ## Key Files
 
 | File | Purpose |
-|------|---------|
+| ------ | --------- |
 | `.claude/instance.sample.md` | Configuration contract template — copy to `.claude/instance.md` and fill in your instance's values |
 | `.claude/skills/ha-update/` | `/ha-update` — full update lifecycle (inventory, risk classification, safe ordering, validation gates) |
 | `.claude/skills/theme-update/` | `/theme-update` — merges new Catppuccin distribution releases into a customized Mush theme fork |
