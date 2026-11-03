@@ -27,7 +27,7 @@ Merge a new Catppuccin distribution release into the Catppuccin Mush theme, pres
 
 ## Invocation
 
-```
+```text
 /theme-update
 ```
 
@@ -37,7 +37,7 @@ Run after HACS updates the Catppuccin distribution in `/config/themes/catppuccin
 
 - SSH access to HA Pi (connection details in .claude/instance.md Configuration > `ssh.*`)
 - Chrome MCP for visual validation
-- Read `Knowledge/theme-architecture.md` before proceeding
+- Read `Knowledge/Reference/theme-architecture.md` before proceeding
 
 ## Instructions
 
@@ -74,7 +74,7 @@ The distribution computes ramps with inverted direction (05=lightest, 95=darkest
 **Flip all ramp sections** by swapping values at mirrored stops:
 
 | Stop | Swap With |
-|------|-----------|
+| ------ | ----------- |
 | 05 | 95 |
 | 10 | 90 |
 | 20 | 80 |
@@ -93,6 +93,7 @@ Update ALL semantic color references that point to ramp stops. Apply the same mi
 - Same for orange, red, green, and any new groups.
 
 **Do NOT change** references to:
+
 - Palette colors (`catppuccin-text`, `catppuccin-blue`, etc.)
 - `--white-color`, `--primary-color`, or other non-ramp references
 - The `50` stop (midpoint, unchanged)
@@ -123,12 +124,14 @@ Apply these mandatory fixes:
 1. **Remove `modes:` declaration** — if the distribution adds `modes: dark: {}`, delete it. HA 2026.x injects 523 hardcoded dark-mode CSS vars as inline styles on `hui-view-container` when this is present. Add the explanatory comment from the current theme.
 
 2. **Ensure background variables** — verify these exist:
+
    ```yaml
    lovelace-background: var(--primary-background-color)
    view-background: var(--primary-background-color)
    ```
 
 3. **Ensure `ha-card-background`** — verify this exists:
+
    ```yaml
    ha-card-background: var(--card-background-color)
    ```
@@ -155,10 +158,12 @@ Apply these mandatory fixes:
 ### Step 11: Finalize
 
 If user approves:
+
 1. Commit on Pi using SSH connection details from .claude/instance.md Configuration
-2. Update the version reference in `Knowledge/theme-architecture.md` if the architecture changed
+2. Update the version reference in `Knowledge/Reference/theme-architecture.md` if the architecture changed
 
 If user rejects:
+
 1. Revert: `git checkout -- themes/catppuccin_mush/` on Pi
 2. Reload themes and re-set theme
 3. Investigate what went wrong

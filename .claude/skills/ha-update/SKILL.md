@@ -45,7 +45,7 @@ Manages the full lifecycle of HA updates: inventory, risk assessment, dependency
 
 ## Invocation
 
-```
+```text
 /ha-update
 ```
 
@@ -69,7 +69,7 @@ Two distinct halt actions, used throughout this framework:
 ### Failure tiers
 
 | Tier | Definition | Example | Response |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Transient** | Failure plausibly self-corrects on retry of the same action. | An ha-mcp call returns "service temporarily unavailable"; retrying after 10s succeeds. | Retry once. If clean, log and proceed. If still failed, re-tier as Recoverable. |
 | **Recoverable** | A scoped corrective action exists that has restored similar failures before. | Pyscript shows `not_loaded` after Core update; documented recovery is one HA restart. | Apply the documented recovery. Re-validate. If clean, proceed (counts as a strike for the two-consecutive-failure rule). If not, re-tier as Blocking. |
 | **Blocking** | The system keeps running, but additional updates would compound the failure. | Config check fails. Integration in persistent failure after recovery action. New error class in logs whose domain matches the just-installed update. | **Halt** (see above). |
@@ -91,12 +91,14 @@ The "low-risk heuristic but ambiguous breaking change in changelog" case: bump r
 After resolving conflicting signals, evaluate every item's validation against this question: **was this update's effect contained?**
 
 **Continue** when ALL hold:
+
 - `ha_check_config()` passes
 - No NEW error classes in logs whose domain matches the just-installed update (vs the setup baseline)
-- Repairs delta is 0, OR new repairs are in the benign-categories list (`Knowledge/update-heuristics.md` → "Benign repair categories")
+- Repairs delta is 0, OR new repairs are in the benign-categories list (`Knowledge/Methods/update-heuristics.md` → "Benign repair categories")
 - No previously loaded integration moved to a failure state, OR a single restart cleared the failure
 
 **Halt** when ANY hold:
+
 - Config check fails (definitionally — can't proceed)
 - A previously loaded integration is in `setup_error` AND a single restart didn't clear it
 - New errors in logs match the domain of the just-installed update (e.g., Sonos errors after Sonos card)
@@ -109,16 +111,19 @@ After resolving conflicting signals, evaluate every item's validation against th
 ### Escalation triggers
 
 **Halt the run** when:
+
 - Any failure classifies as Blocking
 - Two consecutive items have been Recoverable+ per the two-consecutive rule
 - The same recovery action has been attempted twice without success on the same item
 
 **Defer the run** when:
+
 - Any failure classifies as Cascading
 - A backup operation enters freeze state for >10 min without progress
 - MCP unreachability persists beyond the 6-minute expected-restart polling window AND no restart was just initiated
 
 **Continue the run** when:
+
 - All failures resolved as Transient on first retry
 - The single Recoverable failure recovered cleanly AND the prior item was clean (no two-consecutive trigger)
 - Validation deltas pass the "stable enough" criteria
@@ -126,8 +131,8 @@ After resolving conflicting signals, evaluate every item's validation against th
 ## Key Files
 
 | File | Purpose |
-|------|---------|
-| `Knowledge/update-heuristics.md` | Distilled patterns — read on startup, refine at closeout |
+| ------ | --------- |
+| `Knowledge/Methods/update-heuristics.md` | Distilled patterns — read on startup, refine at closeout |
 | `Context/ha-043-update-management.md` | Architecture and design rationale |
 | `progress.md` | Project progress log — append summary at closeout |
 | `backlog.json` | Project backlog — update status at closeout |
@@ -135,6 +140,7 @@ After resolving conflicting signals, evaluate every item's validation against th
 ## System Access
 
 SSH connection details and add-on identifiers are configured in the project .claude/instance.md under Configuration. Resolve these values at runtime by reading .claude/instance.md:
+
 - SSH host: `Configuration > ssh.host`
 - SSH key: `Configuration > ssh.key`
 - HA config path on remote: `Configuration > ssh.config_path`
@@ -146,12 +152,13 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 ### Phase A: Setup
 
-1. **Load heuristics.** Read `Knowledge/update-heuristics.md`. These patterns inform risk classification, ordering, validation, and checkpoint decisions throughout the run.
+1. **Load heuristics.** Read `Knowledge/Methods/update-heuristics.md`. These patterns inform risk classification, ordering, validation, and checkpoint decisions throughout the run.
 
 2. **Load system config.** Read .claude/instance.md Configuration section to resolve SSH connection details and add-on identifiers for use throughout the run.
 
 3. **Create run-scoped working files.** Create a temp directory for this run **outside the vault** (use `mktemp -d /tmp/ha-update.XXXXXX`) to avoid Obsidian MCP redirect hooks on `.md` files inside the vault. Initialize two files:
    - `run-backlog.json` — tracks all work items (updates, migrations, discovered tasks). Schema:
+
      ```json
      {
        "run_id": "<ISO timestamp>",
@@ -163,9 +170,11 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
        "items": []
      }
      ```
+
    - `run-progress.md` — chronological narrative of the run. Start with a header and setup entry.
 
    Item schema for the run backlog:
+
    ```json
    {
      "id": "<type>-<n>",
@@ -194,9 +203,9 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 ### Phase B: Assess
 
-5. **Inventory updates.** Call `ha_get_updates()`. For each update entity:
+1. **Inventory updates.** Call `ha_get_updates()`. For each update entity:
    - Determine category (core, addon, hacs, os, supervisor, app) from entity_id patterns and metadata
-   - **Classify risk.** Risk is the product of (probability of breakage) × (blast radius) × (recoverability) — see `Knowledge/update-heuristics.md` "Why these defaults" for the model. Apply in order:
+   - **Classify risk.** Risk is the product of (probability of breakage) × (blast radius) × (recoverability) — see `Knowledge/Methods/update-heuristics.md` "Why these defaults" for the model. Apply in order:
      - Start with the category default from heuristics
      - Apply component-specific override if one exists and matches the version range
      - For Core: pull release notes via `ha_get_updates(entity_id=..., include_release_notes=true)` and cross-reference `breaking_changes.entries` against `installed_integrations`. Any intersection elevates to high; empty intersection clears the elevation back to default.
@@ -210,16 +219,16 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
      - Implicit: components that fix version-specific bugs follow that version
    - Add to run backlog as a `pending` item
 
-6. **Determine execution order.** Sort items by:
+2. **Determine execution order.** Sort items by:
    - Dependency constraints (hard — must be respected)
    - Risk gradient from heuristics (soft — lowest risk first, highest last)
    - Category grouping from heuristics ordering heuristic
 
-7. **Log assessment** to run progress with rationale for risk classifications and ordering decisions.
+3. **Log assessment** to run progress with rationale for risk classifications and ordering decisions.
 
 ### Phase C: Execute (loop)
 
-8. **Create backup via SSH and wait for completion.** Do NOT use `ha_backup_create()` (MCP) — it includes all add-ons with no exclusion option and times out at 120s. Do NOT use `update.install`'s `backup: true` flag (includes database, slow).
+1. **Create backup via SSH and wait for completion.** Do NOT use `ha_backup_create()` (MCP) — it includes all add-ons with no exclusion option and times out at 120s. Do NOT use `update.install`'s `backup: true` flag (includes database, slow).
 
    Use SSH to create a selective partial backup that excludes slow or unnecessary add-ons.
 
@@ -231,7 +240,8 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
    If new add-ons have been installed since the last run, they will be automatically included. If add-ons have been removed, they won't appear in the query. Log the final add-on list in run progress so the record is clear.
 
    **Step 8b: Create the backup.**
-   ```
+
+   ```text
    ssh -i {ssh.key} {ssh.host} "ha backups new --name 'Pre_Update_Run_<date>' --homeassistant-exclude-database --app <slug1> --app <slug2> ..."
    ```
 
@@ -240,21 +250,24 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
    **The backup MUST complete before any updates begin.** The backup freezes the Supervisor while backing up add-ons. This freeze blocks OS updates, Supervisor restarts, and recovery commands. Proceeding with updates during an active backup risks I/O contention that can stall the backup indefinitely and leave the system frozen with no graceful recovery.
 
    The SSH command should return when the backup completes (no 120s MCP timeout). If it times out or hangs, verify via:
-   ```
+
+   ```text
    ssh -i {ssh.key} {ssh.host} "ha jobs info" | grep -A 8 "<backup_job_uuid>"
    ```
+
    Poll until the top-level backup job shows `done: true`.
 
    **If backup gets stuck (>10 minutes without InfluxDB):** The system is frozen and recovery options are limited (`thaw` blocked by active job, `supervisor restart` blocked by freeze). Do NOT proceed with updates. Log the issue, note that daily automatic backups provide coverage, and defer the run.
 
    After backup completes, verify the system state is `running` (not `freeze`):
-   ```
+
+   ```text
    ssh -i {ssh.key} {ssh.host} "ha info | grep state"
    ```
 
    Log backup completion to run progress, then proceed.
 
-9. **Execute each item in order.** For each item:
+2. **Execute each item in order.** For each item:
 
    a. **Update status** to `in-progress` in run backlog. **The run backlog must be written to disk after every status change** — this is critical for resumability if the session is interrupted.
 
@@ -286,22 +299,22 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 ### Phase D: Closeout
 
-10. **Git commit.** SSH to the Pi (using connection details from .claude/instance.md Configuration) and commit config changes. Use targeted `git add` with specific paths — NOT `git add -A`. Check `git status --short` for modified files and stage only those relevant to the updates.
+ 1. **Git commit.** SSH to the Pi (using connection details from .claude/instance.md Configuration) and commit config changes. Use targeted `git add` with specific paths — NOT `git add -A`. Check `git status --short` for modified files and stage only those relevant to the updates.
 
-11. **Refine heuristics.** Read the current heuristics file and the run progress. Update `Knowledge/update-heuristics.md`:
+ 2. **Refine heuristics.** Read the current heuristics file and the run progress. Update `Knowledge/Methods/update-heuristics.md`:
     - Update observation counts on existing patterns
     - Add new patterns discovered during this run
     - Consolidate redundant entries
     - Remove heuristics that haven't applied in 3+ consecutive runs
     - Do NOT append raw run history — distill into patterns only
 
-12. **Write project progress entry.** Append a session summary to `progress.md` covering what was updated, issues encountered, heuristics refined, items deferred.
+ 3. **Write project progress entry.** Append a session summary to `progress.md` covering what was updated, issues encountered, heuristics refined, items deferred.
 
-13. **Update project backlog.** Update relevant backlog items in `backlog.json` if appropriate.
+ 4. **Update project backlog.** Update relevant backlog items in `backlog.json` if appropriate.
 
-14. **Clean up.** Delete the run-scoped temp directory.
+ 5. **Clean up.** Delete the run-scoped temp directory.
 
-15. **Report summary** to user.
+ 6. **Report summary** to user.
 
 ## Error Handling
 
@@ -321,7 +334,8 @@ Specific failure modes with known responses. For failures not covered here, appl
 The MCP Server add-on cannot be updated via ha-mcp tools — updating it restarts the service that provides the tools. Detect this case (match the entity_id or add-on slug from .claude/instance.md Configuration > `addons.mcp_server_slug`) and route around it via SSH:
 
 Resolve connection details and slug from .claude/instance.md Configuration, then:
-```
+
+```text
 ssh -i {ssh.key} {ssh.host} "ha apps update {addons.mcp_server_slug}"
 ```
 
