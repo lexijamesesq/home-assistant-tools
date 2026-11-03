@@ -232,14 +232,14 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
    Use SSH to create a selective partial backup that excludes slow or unnecessary add-ons.
 
-   **Step 8a: Build the add-on list dynamically.** Query installed add-ons via `ha_get_addon()` (or SSH `ha apps info --raw-json`). Collect all installed add-on slugs. Then remove any slugs listed in the exclusion set below. The remaining slugs form the `--app` arguments for the backup command.
+   **Step 1a: Build the add-on list dynamically.** Query installed add-ons via `ha_get_addon()` (or SSH `ha apps info --raw-json`). Collect all installed add-on slugs. Then remove any slugs listed in the exclusion set below. The remaining slugs form the `--app` arguments for the backup command.
 
    **Backup exclusions** (configured in .claude/instance.md or heuristics — check both):
    - `a0d7b954_influxdb` — historical time-series data only, 15-16 min backup time, no rollback value for updates. Daily automatic backups cover it.
 
    If new add-ons have been installed since the last run, they will be automatically included. If add-ons have been removed, they won't appear in the query. Log the final add-on list in run progress so the record is clear.
 
-   **Step 8b: Create the backup.**
+   **Step 1b: Create the backup.**
 
    ```text
    ssh -i {ssh.key} {ssh.host} "ha backups new --name 'Pre_Update_Run_<date>' --homeassistant-exclude-database --app <slug1> --app <slug2> ..."
@@ -321,7 +321,7 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 Specific failure modes with known responses. For failures not covered here, apply the Judgment Framework to classify and respond.
 
 - **ha-mcp unreachable:** Distinguish expected-restart silence from system unresponsiveness. If a Core update or `ha_restart` was just initiated, the 6-minute polling window IS the expected behavior — not Cascading. Poll every 30s up to 6 minutes. If unreachable beyond that window AND no restart was just initiated, treat as Cascading and Defer.
-- **Backup timeout (MCP 120s):** Not a failure — verify via SSH `ha jobs info` per Step 8. Live state > MCP timeout (Conflicting Signals rule 1). Do NOT proceed with updates until the backup job shows `done: true` and the system state is `running`.
+- **Backup timeout (MCP 120s):** Not a failure — verify via SSH `ha jobs info` per Phase C step 1. Live state > MCP timeout (Conflicting Signals rule 1). Do NOT proceed with updates until the backup job shows `done: true` and the system state is `running`.
 - **Backup freeze blocks operations:** If the system is in `freeze` state, OS updates, Supervisor restarts, and `ha backups thaw` (while a job is active) all fail. Wait for backup completion or Defer the run. `ha host reboot` is destructive — never attempt without user confirmation.
 - **Config check fails:** Blocking. Halt. Capture diagnostic state to project backlog.
 - **Update entity stuck in progress:** Tier escalates with time. 0–5 min: Transient (entity lag is common). 5–10 min: Recoverable — check via SSH `ha apps info <slug>` for ground truth (if version updated, the entity is just lagging and the item succeeded). >10 min with no SSH-confirmed progress: Blocking (Halt). If Supervisor itself is unresponsive: Cascading (Defer).
