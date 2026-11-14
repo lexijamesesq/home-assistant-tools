@@ -4,8 +4,8 @@ tags:
 description: "Claude Code skills for managing a Home Assistant instance — system updates, theme maintenance, dashboard validation via SSH and the HA MCP server."
 linear_project_id: "b56fa8b9-f80b-467a-b5e3-3f9d7ba40e6c"
 linear_url: "https://linear.app/lexijamesesq/project/home-assistant-a0610f407a5a"
-notion_project: https://app.notion.com/p/4175f53f7dbc81c38d99cb7b6015905f
-notion_knowledge: collection://4175f53f-7dbc-811b-abd6-000b47cf7abb
+notion_project: "https://app.notion.com/p/4175f53f7dbc81c38d99cb7b6015905f"
+notion_knowledge: "collection://4175f53f-7dbc-811b-abd6-000b47cf7abb"
 ---
 
 # home-assistant-tools
