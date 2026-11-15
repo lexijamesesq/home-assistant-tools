@@ -156,7 +156,7 @@ The core loop is **assess → act → re-assess → act** until the run backlog 
 
 2. **Load system config.** Read .claude/instance.md Configuration section to resolve SSH connection details and add-on identifiers for use throughout the run.
 
-3. **Create run-scoped working files.** Create a temp directory for this run **outside the repository** (use `mktemp -d /tmp/ha-update.XXXXXX`) to avoid Obsidian MCP redirect hooks on `.md` files inside the vault. Initialize two files:
+3. **Create run-scoped working files.** Create a temp directory for this run **outside the repository** (use `mktemp -d /tmp/ha-update.XXXXXX`), so run files never land in the working tree. Initialize two files:
    - `run-backlog.json` — tracks all work items (updates, migrations, discovered tasks). Schema:
 
      ```json
